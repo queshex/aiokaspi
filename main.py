@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 
 from src.auth.service import AuthClient
-
+#Just for checking git
 async def main():
     async with aiohttp.ClientSession() as session:
         auth_client = await AuthClient.from_files(session=session, with_session=False)
