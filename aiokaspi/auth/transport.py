@@ -2,7 +2,7 @@ from typing import Optional
 
 import aiohttp
 
-from src.auth.schemas import BaseSchema
+from aiokaspi.auth.schemas import BaseSchema
 
 
 class Transport:

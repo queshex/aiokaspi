@@ -1,6 +1,6 @@
 from typing import Optional
 
-from src.auth import schemas, exceptions
+from aiokaspi.auth import schemas, exceptions
 
 
 class ResponseValidator:

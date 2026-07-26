@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from src.auth import exceptions, schemas, utils, validation
-from src.auth.keys import Keys
-from src.auth.storage import Storage
+from aiokaspi.auth import exceptions, schemas, utils, validation
+from aiokaspi.auth.keys import Keys
+from aiokaspi.auth.storage import Storage
 
 if TYPE_CHECKING:
     import aiohttp
-    from src.auth.transport import Transport
+    from aiokaspi.auth.transport import Transport
 
 
 class AuthClient:
@@ -31,7 +31,7 @@ class AuthClient:
         if transport is None:
             if session is None:
                 raise ValueError("Either transport or session must be provided")
-            from src.auth.transport import Transport
+            from aiokaspi.auth.transport import Transport
             transport = Transport(session=session)
         self.transport = transport
         self._raw_mode: bool = raw_mode
@@ -85,7 +85,7 @@ class AuthClient:
         if transport is None:
             if session is None:
                 raise ValueError("Either transport or session must be provided")
-            from src.auth.transport import Transport
+            from aiokaspi.auth.transport import Transport
             transport = Transport(session=session)
 
         if not Storage.check_keys():
