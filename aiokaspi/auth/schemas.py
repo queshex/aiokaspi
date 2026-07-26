@@ -154,7 +154,7 @@ class SecondStepRequestData(BaseSchema):
             raise ValueError(f"phone_number must start with 7: {self.phone_number}")
         if len(n) != 10:
             raise ValueError(f"phone_number must be 10 digits long: {self.phone_number}")
-
+        self.phone_number = n 
 
 @dataclass(slots=True)
 class SecondStepRequest(BaseSchema):
