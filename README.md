@@ -1,5 +1,4 @@
-# Kaspi Python SDK (Auth Client)
-
+# Kaspi Python SDK (Auth Client).
 Библиотека для аутентификации в API Kaspi Pay с использованием мобильного протокола (iOS/Android).
 
 > [!WARNING]
