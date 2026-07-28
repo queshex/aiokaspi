@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aiokaspi"
+version = "0.1.0"
+description = "Асинхронная библиотека для работы с API Kaspi Pay"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "Alan Sharipov" }
+]
+dependencies = [
+    "aiohttp>=3.8.0",
+    "cryptography>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/SharipovAlan/aiokaspi"
