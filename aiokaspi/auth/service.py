@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class AuthClient:
     def __init__(
-        self, 
+        self,
         transport: Optional[Transport] = None,
         session: Optional[aiohttp.ClientSession] = None,
         public_key: Optional[str] = None,
@@ -32,6 +32,7 @@ class AuthClient:
             if session is None:
                 raise ValueError("Either transport or session must be provided")
             from aiokaspi.auth.transport import Transport
+
             transport = Transport(session=session)
         self.transport = transport
         self._raw_mode: bool = raw_mode
@@ -50,7 +51,7 @@ class AuthClient:
         self.token_sn: str = token_sn
         self.x509: str = x509
         self.user_id_hash: str = user_id_hash
-    
+
     def __str__(self) -> str:
         def mask(value: Optional[str]) -> str:
             if value is None:
@@ -59,33 +60,34 @@ class AuthClient:
 
         return (
             f"AuthClient("
-                f"public_key={mask(self.public_key)}, "
-                f"private_key={mask(self.private_key)}, "
-                f"pk={mask(self.pk)}, "
-                f"pk_tag={mask(self.pk_tag)}, "
-                f"device_id={mask(self.device_id)}, "
-                f"install_id={mask(self.install_id)}, "
-                f"pin_hash={mask(self.pin_hash)}, "
-                f"raw_mode={self._raw_mode}, "
-                f"step={self.step}, "
-                f"process_id={mask(self.process_id)}, "
-                f"token_sn={mask(self.token_sn)}, "
-                f"x509={mask(self.x509)}"
+            f"public_key={mask(self.public_key)}, "
+            f"private_key={mask(self.private_key)}, "
+            f"pk={mask(self.pk)}, "
+            f"pk_tag={mask(self.pk_tag)}, "
+            f"device_id={mask(self.device_id)}, "
+            f"install_id={mask(self.install_id)}, "
+            f"pin_hash={mask(self.pin_hash)}, "
+            f"raw_mode={self._raw_mode}, "
+            f"step={self.step}, "
+            f"process_id={mask(self.process_id)}, "
+            f"token_sn={mask(self.token_sn)}, "
+            f"x509={mask(self.x509)}"
             f")"
         )
 
     @classmethod
     async def from_files(
-        cls, 
-        transport: Optional[Transport] = None, 
+        cls,
+        transport: Optional[Transport] = None,
         session: Optional[aiohttp.ClientSession] = None,
-        raw_mode: bool = False, 
-        with_session: bool = True
+        raw_mode: bool = False,
+        with_session: bool = True,
     ) -> AuthClient:
         if transport is None:
             if session is None:
                 raise ValueError("Either transport or session must be provided")
             from aiokaspi.auth.transport import Transport
+
             transport = Transport(session=session)
 
         if not Storage.check_keys():
@@ -111,12 +113,12 @@ class AuthClient:
 
         if with_session:
             if await self._is_valid_session(
-                self.x509, 
-                self.token_sn, 
-                self.user_id_hash, 
-                self.device_id, 
-                self.install_id, 
-                self.pin_hash, 
+                self.x509,
+                self.token_sn,
+                self.user_id_hash,
+                self.device_id,
+                self.install_id,
+                self.pin_hash,
                 self.public_key,
                 self.private_key,
                 self.pk,
@@ -129,39 +131,43 @@ class AuthClient:
 
     @staticmethod
     async def _is_valid_session(
-        x509: str, 
-        token_sn: str, 
-        user_id_hash: str, 
-        device_id: str, 
-        install_id: str, 
-        pin_hash: str, 
+        x509: str,
+        token_sn: str,
+        user_id_hash: str,
+        device_id: str,
+        install_id: str,
+        pin_hash: str,
         public_key: str,
         private_key: str,
         pk: str,
         pk_tag: str,
     ) -> bool:
-        "Заглушка, нужно доработать" 
+        "Заглушка, нужно доработать"
         return True
 
     def _check_step(self, step: schemas.Step) -> None:
         if self.step != step:
-            raise exceptions.KaspiPayError(f"Incorrect step: {self.step}, expected {step}")
-    
+            raise exceptions.KaspiPayError(
+                f"Incorrect step: {self.step}, expected {step}"
+            )
+
     def _already_auth(self) -> None:
         if self.authenticated:
-            raise exceptions.KaspiPayError("You are already authenticated, but you call auth method")
-    
+            raise exceptions.KaspiPayError(
+                "You are already authenticated, but you call auth method"
+            )
+
     async def me(self):
         pass
-        
+
     async def init(self) -> schemas.Meta:
         self._already_auth()
         self._check_step(schemas.Step.FIRST)
-            
+
         body_data = schemas.FirstStepRequestData(
             device_id=self.device_id,
             install_id=self.install_id,
-        )   
+        )
 
         body = schemas.FirstStepRequest(
             data=body_data,
@@ -179,14 +185,13 @@ class AuthClient:
 
         data: dict = await self.transport.post(
             "api/v1/entrance/step",
-            payload=body,   
+            payload=body,
             headers=headers,
         )
         meta = validation.ResponseValidator.init(data)
         self.process_id = meta.p_id
         self.step = schemas.Step.SECOND
         return meta if not self._raw_mode else data
-        
 
     async def send_otp(self, phone_number: str) -> schemas.Meta:
         self._already_auth()
@@ -218,12 +223,14 @@ class AuthClient:
             headers=headers,
         )
         self.step = schemas.Step.THIRD
-        return validation.ResponseValidator.send_otp(data) if not self._raw_mode else data
+        return (
+            validation.ResponseValidator.send_otp(data) if not self._raw_mode else data
+        )
 
     async def confirm_otp(self, otp: str) -> schemas.Meta:
         self._already_auth()
         self._check_step(schemas.Step.THIRD)
-        
+
         body = schemas.ThirdStepRequest(
             data=schemas.ThirdStepRequestData(user_otp=otp),
             meta=schemas.Meta(
@@ -248,7 +255,11 @@ class AuthClient:
             headers=headers,
         )
         self.step = schemas.Step.FINISH
-        return validation.ResponseValidator.confirm_otp(data) if not self._raw_mode else data
+        return (
+            validation.ResponseValidator.confirm_otp(data)
+            if not self._raw_mode
+            else data
+        )
 
     async def finish(self) -> schemas.FinishResponse:
         self._already_auth()
@@ -256,18 +267,18 @@ class AuthClient:
 
         data_to_sign = schemas.DataToSign(
             install_id=self.install_id,
-            auth=[
-                schemas.Auth()
-            ],
-            time=utils.get_current_time()
+            auth=[schemas.Auth()],
+            time=utils.get_current_time(),
         )
-        
+
         body = schemas.FinishRequest(
             guard=schemas.Guard(pin_hash=self.pin_hash, x509=self.public_key),
             process_id=self.process_id,
             signed=schemas.Signed(
                 data=data_to_sign.base64(),
-                sign=Keys.sign_data(data_to_sign.base64(), private_key=self.private_key)
+                sign=Keys.sign_data(
+                    data_to_sign.base64(), private_key=self.private_key
+                ),
             ),
         )
         finish_url: str = f"{self.transport.base_url}/api/v1/kpentrance/finish"
@@ -275,12 +286,12 @@ class AuthClient:
         pre_headers = schemas.PreFinishHeaders(
             x_time=utils.get_current_time(),
             x_pktag=self.pk_tag,
-            x_su=Keys.compute_x_su(url=finish_url)
+            x_su=Keys.compute_x_su(url=finish_url),
         )
         pre_headers_dict = pre_headers.asdict_with_aliases()
         x_sign: str = Keys.compute_x_sign(
-            url=finish_url, 
-            headers=pre_headers_dict, 
+            url=finish_url,
+            headers=pre_headers_dict,
             x_sh=pre_headers.x_sh,
             private_key=self.private_key,
         )
@@ -292,11 +303,9 @@ class AuthClient:
             payload=body,
             headers=headers,
         )
-        result: schemas.FinishResponse = validation.ResponseValidator.finish(data) 
+        result: schemas.FinishResponse = validation.ResponseValidator.finish(data)
         Storage.save_session(
-            x509=result.x509, 
-            token_sn=result.token_sn, 
-            user_id_hash=result.user_id_hash
+            x509=result.x509, token_sn=result.token_sn, user_id_hash=result.user_id_hash
         )
         self.token_sn = result.token_sn
         self.x509 = result.x509
@@ -305,7 +314,7 @@ class AuthClient:
         return result if not self._raw_mode else data
 
     async def logout(self) -> None:
-        #TODO: Закончить
+        # TODO: Закончить
         body = schemas.LogoutRequest(
             device_id=self.device_id,
             token_sn=self.token_sn,

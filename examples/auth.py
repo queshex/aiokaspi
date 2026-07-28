@@ -2,11 +2,13 @@ import asyncio
 import aiohttp
 
 from aiokaspi.auth.service import AuthClient
-#Just for checking git
+
+
+# Just for checking git
 async def main():
     async with aiohttp.ClientSession() as session:
         auth_client = await AuthClient.from_files(session=session, with_session=False)
-        
+
         # Шаг 1: Инициализация
         data = await auth_client.init()
         print("Step 1 (init) OK:", data)

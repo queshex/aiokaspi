@@ -1,5 +1,3 @@
-from typing import Optional
-
 from aiokaspi.auth import schemas, exceptions
 
 
@@ -11,9 +9,13 @@ class ResponseValidator:
         if data["view"].get("onOpenAlarm", {}).get("error") is not None:
             match data["view"]["onOpenAlarm"]["error"]["code"]:
                 case schemas.ErrorCode.OLD_VERSION_TO_UPDATE:
-                    raise exceptions.UpdateClientError("Update client, you can do this in config")
+                    raise exceptions.UpdateClientError(
+                        "Update client, you can do this in config"
+                    )
                 case schemas.ErrorCode.TEMPORARY_BLOCKED:
-                    raise exceptions.TemporaryBlockedError("Your account has been temporarily blocked.")
+                    raise exceptions.TemporaryBlockedError(
+                        "Your account has been temporarily blocked."
+                    )
                 case _:
                     raise exceptions.UnexpectedResponseError(data)
         meta = schemas.Meta.from_dict(data["meta"])
@@ -28,15 +30,14 @@ class ResponseValidator:
         meta = schemas.Meta.from_dict(data["meta"])
 
         view_error_code = (
-            data.get("view", {})
-            .get("onOpenAlarm", {})
-            .get("error", {})
-            .get("code")
+            data.get("view", {}).get("onOpenAlarm", {}).get("error", {}).get("code")
         )
         if view_error_code is not None:
             match view_error_code:
                 case schemas.ErrorCode.TEMPORARY_BLOCKED:
-                    raise exceptions.TemporaryBlockedError("Your account has been temporarily blocked.")
+                    raise exceptions.TemporaryBlockedError(
+                        "Your account has been temporarily blocked."
+                    )
                 case _:
                     raise exceptions.UnexpectedResponseError(data)
 
@@ -44,11 +45,15 @@ class ResponseValidator:
             error_code = data["error"]["code"]
             match error_code:
                 case schemas.ErrorCode.CONTEXT_NOT_FOUND:
-                    raise exceptions.TimeExceededError("Your time has exceeded. Please try again.")
+                    raise exceptions.TimeExceededError(
+                        "Your time has exceeded. Please try again."
+                    )
                 case schemas.ErrorCode.BAD_REQUEST:
                     raise exceptions.BadRequestError("Bad request.")
                 case schemas.ErrorCode.INVALID_PHONE_NUMBER:
-                    raise exceptions.InvalidPhoneNumberError("Invalid phone number provided.")
+                    raise exceptions.InvalidPhoneNumberError(
+                        "Invalid phone number provided."
+                    )
                 # case schemas.ErrorCode.SYSTEM_ERROR:
                 #     raise exceptions.BadRequestError()
                 case _:
@@ -56,9 +61,13 @@ class ResponseValidator:
 
         match meta.sn:
             case schemas.SN.VIEW_ENTER_LOGIN_PASSWORD:
-                raise exceptions.NotCashierError("You are not a cashier. Please register your number as Cashier in Kaspi.kz application.")
+                raise exceptions.NotCashierError(
+                    "You are not a cashier. Please register your number as Cashier in Kaspi.kz application."
+                )
             case schemas.SN.WEB_ORG_REGISTRATION:
-                raise exceptions.OrganizationNotCreatedError("Organization not created.")
+                raise exceptions.OrganizationNotCreatedError(
+                    "Organization not created."
+                )
             case schemas.SN.VIEW_ENTER_OTP:
                 return meta
             case _:
@@ -73,7 +82,7 @@ class ResponseValidator:
                 case _:
                     raise exceptions.UnexpectedResponseError(data)
         meta = schemas.Meta.from_dict(data["meta"])
-        
+
         match meta.sn:
             case schemas.SN.MOBILE_DEVICE_REGISTRATION:
                 return meta
@@ -82,6 +91,8 @@ class ResponseValidator:
 
     @staticmethod
     def finish(data: dict) -> schemas.FinishResponse:
-        if (data.get("success") is True) and (data.get("data", {}).get("success") is True):
+        if (data.get("success") is True) and (
+            data.get("data", {}).get("success") is True
+        ):
             return schemas.FinishResponse.from_dict(data["data"])
         raise exceptions.UnexpectedResponseError(data)
