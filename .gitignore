@@ -4,7 +4,7 @@
 # Игнорировать все папки __pycache__
 __pycache__/
 .ruff_cache/
-.*.eff-info/
+aiokaspi.egg-info/
 # Игнорировать отдельный скомпилированный Python-код
 *.py[cod]
 *$py.class

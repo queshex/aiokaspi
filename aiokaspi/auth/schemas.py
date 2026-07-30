@@ -103,7 +103,7 @@ class FirstStepRequestData(BaseSchema):
     device_id: str = field(metadata=_alias("deviceId"))
     install_id: str = field(metadata=_alias("installId"))
 
-    app_build: str = field(default="1099", metadata=_alias("appBuild"))
+    app_build: str = field(default="1100", metadata=_alias("appBuild"))
     app_version: str = field(default="4.110.1", metadata=_alias("appVersion"))
     auth: str = field(default="2", metadata=_alias("auth"))
     device_brand: str = field(default="Apple", metadata=_alias("deviceBrand"))
