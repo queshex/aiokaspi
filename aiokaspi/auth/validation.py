@@ -1,5 +1,5 @@
-from aiokaspi.auth import schemas, exceptions
 from aiokaspi import exceptions as basic_exceptions
+from aiokaspi.auth import exceptions, schemas
 
 
 class ResponseValidator:

@@ -6,7 +6,6 @@ import re
 import uuid
 from dataclasses import dataclass, field, fields
 from enum import Enum
-from typing import Optional
 from urllib.parse import urlencode
 
 
@@ -153,9 +152,7 @@ class SecondStepRequestData(BaseSchema):
 
     def __post_init__(self) -> None:
         n = self.phone_number
-        if n.startswith("8") and len(n) == 11:
-            n = n[1:]
-        elif n.startswith("77") and len(n) == 11:
+        if n.startswith("8") and len(n) == 11 or n.startswith("77") and len(n) == 11:
             n = n[1:]
         elif n.startswith("+77") and len(n) == 12:
             n = n[2:]
@@ -289,7 +286,7 @@ class StepCookie(BaseSchema):
     )
     xs: str = field(default="R:0|E:0|RH:0|N:0|GS:0", metadata=_alias("xs"))
 
-    user_token: Optional[str] = field(default=None, metadata=_alias("user_token"))
+    user_token: str | None = field(default=None, metadata=_alias("user_token"))
 
     def to_cookie_string(self) -> str:
         data = self.asdict_with_aliases()

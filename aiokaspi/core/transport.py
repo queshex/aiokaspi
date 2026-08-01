@@ -1,8 +1,4 @@
-from typing import Optional
-
 import aiohttp
-
-from aiokaspi.auth.schemas import BaseSchema
 
 
 class Transport:
@@ -17,8 +13,8 @@ class Transport:
     async def get(
         self,
         endpoint: str,
-        headers: type[BaseSchema],
-        params: Optional[type[BaseSchema]] = None,
+        headers,  # TODO: It should receive raw dict no dataclasses!!
+        params=None,
     ) -> dict:
         async with self.session.get(
             f"{self.base_url}/{endpoint}",
@@ -27,9 +23,7 @@ class Transport:
         ) as response:
             return await response.json()
 
-    async def post(
-        self, endpoint: str, headers: type[BaseSchema], payload: type[BaseSchema]
-    ) -> dict:
+    async def post(self, endpoint: str, headers, payload) -> dict:
         async with self.session.post(
             f"{self.base_url}/{endpoint}",
             headers=headers.asdict_with_aliases(),

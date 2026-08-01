@@ -1,59 +1,48 @@
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from aiokaspi.auth import exceptions, schemas, utils, validation
-from aiokaspi.auth.keys import Keys
-from aiokaspi.auth.storage import Storage
+from aiokaspi.core import config, storage
+from aiokaspi.core.keys import Keys
+from aiokaspi.core.schemas import Entity, SessionSchema
+from aiokaspi.core.storage import FileStorage
 
 if TYPE_CHECKING:
     import aiohttp
-    from aiokaspi.auth.transport import Transport
+
+    from aiokaspi.core.config import ConfigManager
+    from aiokaspi.core.transport import Transport
 
 
 class AuthClient:
     def __init__(
         self,
-        transport: Optional[Transport] = None,
-        session: Optional[aiohttp.ClientSession] = None,
-        public_key: Optional[str] = None,
-        private_key: Optional[str] = None,
-        pk: Optional[str] = None,
-        pk_tag: Optional[str] = None,
-        device_id: Optional[str] = None,
-        install_id: Optional[str] = None,
-        pin_hash: Optional[str] = None,
-        x509: Optional[str] = None,
-        token_sn: Optional[str] = None,
-        user_id_hash: Optional[str] = None,
+        transport: Transport | None = None,
+        session: aiohttp.ClientSession | None = None,
+        storage: storage.BaseStorage | None = None,
         raw_mode: bool = False,
     ):
         if transport is None:
             if session is None:
                 raise ValueError("Either transport or session must be provided")
-            from aiokaspi.auth.transport import Transport
+            from aiokaspi.core.transport import Transport
 
             transport = Transport(session=session)
         self.transport = transport
+        self.storage = storage or FileStorage()
         self._raw_mode: bool = raw_mode
         self.step: schemas.Step = schemas.Step.FIRST
-        self.process_id: Optional[str] = None
-        self.authenticated: bool = False
+        self.process_id: str | None = None
+        self.config_manager: ConfigManager = config.ConfigManager(
+            storage=self.storage,
+        )
+        self.authenticated: bool = self.config_manager.has_session
 
-        self.public_key: str = public_key
-        self.private_key: str = private_key
-        self.pk: str = pk
-        self.pk_tag: str = pk_tag
-        self.device_id: str = device_id
-        self.install_id: str = install_id
-        self.pin_hash: str = pin_hash
-
-        self.token_sn: str = token_sn
-        self.x509: str = x509
-        self.user_id_hash: str = user_id_hash
+        self.config: schemas.Config = self.config_manager.get_lazy_config()
 
     def __str__(self) -> str:
-        def mask(value: Optional[str]) -> str:
+        def mask(value: str | None) -> str:
             if value is None:
                 return "None"
             return value[:2] + "*****" + value[-2:]
@@ -75,59 +64,8 @@ class AuthClient:
             f")"
         )
 
-    @classmethod
-    async def from_files(
-        cls,
-        transport: Optional[Transport] = None,
-        session: Optional[aiohttp.ClientSession] = None,
-        raw_mode: bool = False,
-        with_session: bool = True,
-    ) -> AuthClient:
-        if transport is None:
-            if session is None:
-                raise ValueError("Either transport or session must be provided")
-            from aiokaspi.auth.transport import Transport
-
-            transport = Transport(session=session)
-
-        if not Storage.check_keys():
-            Storage.save_keys(*Keys.generate_keypair_base64())
-        if not Storage.check_device():
-            Storage.save_device(
-                Keys.generate_upper_uuid(),
-                Keys.generate_upper_uuid(),
-                Keys.generate_pin_hash(),
-            )
-
-        self = cls(transport=transport, raw_mode=raw_mode)
-
-        if with_session:
-            if not Storage.check_session():
-                raise exceptions.KaspiPayError("Session not found")
-            self.x509, self.token_sn, self.user_id_hash = Storage.get_session()
-
-        self.private_key, self.public_key = Storage.get_keys()
-        self.device_id, self.install_id, self.pin_hash = Storage.get_device()
-        self.pk = Keys.get_pk(self.public_key)
-        self.pk_tag = Keys.get_pk_tag(self.public_key)
-
-        if with_session:
-            if await self._is_valid_session(
-                self.x509,
-                self.token_sn,
-                self.user_id_hash,
-                self.device_id,
-                self.install_id,
-                self.pin_hash,
-                self.public_key,
-                self.private_key,
-                self.pk,
-                self.pk_tag,
-            ):
-                self.authenticated = True
-                return self
-            raise exceptions.KaspiPayError("Session is not valid")
-        return self
+    def _refresh_config(self) -> None:
+        self.config = self.config_manager.get_lazy_config()
 
     @staticmethod
     async def _is_valid_session(
@@ -165,8 +103,8 @@ class AuthClient:
         self._check_step(schemas.Step.FIRST)
 
         body_data = schemas.FirstStepRequestData(
-            device_id=self.device_id,
-            install_id=self.install_id,
+            device_id=self.config.device_id,
+            install_id=self.config.install_id,
         )
 
         body = schemas.FirstStepRequest(
@@ -175,10 +113,10 @@ class AuthClient:
 
         headers = schemas.StepHeaders(
             cookie=schemas.StepCookie(
-                device_id=self.device_id,
-                install_id=self.install_id,
-                pk=self.pk,
-                pk_tag=self.pk_tag,
+                device_id=self.config.device_id,
+                install_id=self.config.install_id,
+                pk=self.config.pk,
+                pk_tag=self.config.pk_tag,
             ),
             referer=body_data.referer,
         )
@@ -209,10 +147,10 @@ class AuthClient:
 
         headers = schemas.StepHeaders(
             cookie=schemas.StepCookie(
-                device_id=self.device_id,
-                install_id=self.install_id,
-                pk=self.pk,
-                pk_tag=self.pk_tag,
+                device_id=self.config.device_id,
+                install_id=self.config.install_id,
+                pk=self.config.pk,
+                pk_tag=self.config.pk_tag,
             ),
             referer=body.referer,
         )
@@ -241,10 +179,10 @@ class AuthClient:
 
         headers = schemas.StepHeaders(
             cookie=schemas.StepCookie(
-                device_id=self.device_id,
-                install_id=self.install_id,
-                pk=self.pk,
-                pk_tag=self.pk_tag,
+                device_id=self.config.device_id,
+                install_id=self.config.install_id,
+                pk=self.config.pk,
+                pk_tag=self.config.pk_tag,
             ),
             referer=body.referer,
         )
@@ -266,18 +204,20 @@ class AuthClient:
         self._check_step(schemas.Step.FINISH)
 
         data_to_sign = schemas.DataToSign(
-            install_id=self.install_id,
+            install_id=self.config.install_id,
             auth=[schemas.Auth()],
             time=utils.get_current_time(),
         )
 
         body = schemas.FinishRequest(
-            guard=schemas.Guard(pin_hash=self.pin_hash, x509=self.public_key),
+            guard=schemas.Guard(
+                pin_hash=self.config.pin_hash, x509=self.config.public_key
+            ),
             process_id=self.process_id,
             signed=schemas.Signed(
                 data=data_to_sign.base64(),
                 sign=Keys.sign_data(
-                    data_to_sign.base64(), private_key=self.private_key
+                    data_to_sign.base64(), private_key=self.config.private_key
                 ),
             ),
         )
@@ -285,7 +225,7 @@ class AuthClient:
 
         pre_headers = schemas.PreFinishHeaders(
             x_time=utils.get_current_time(),
-            x_pktag=self.pk_tag,
+            x_pktag=self.config.pk_tag,
             x_su=Keys.compute_x_su(url=finish_url),
         )
         pre_headers_dict = pre_headers.asdict_with_aliases()
@@ -293,7 +233,7 @@ class AuthClient:
             url=finish_url,
             headers=pre_headers_dict,
             x_sh=pre_headers.x_sh,
-            private_key=self.private_key,
+            private_key=self.config.private_key,
         )
 
         headers = schemas.FinishHeaders.from_pre(pre_headers, x_sign=x_sign)
@@ -304,18 +244,17 @@ class AuthClient:
             headers=headers,
         )
         result: schemas.FinishResponse = validation.ResponseValidator.finish(data)
-        Storage.save_session(
-            x509=result.x509, token_sn=result.token_sn, user_id_hash=result.user_id_hash
+        self.storage.save(
+            entity=Entity.session,
+            data=SessionSchema(
+                x509=result.x509,
+                token_sn=result.token_sn,
+                user_id_hash=result.user_id_hash,
+            ),
         )
-        self.token_sn = result.token_sn
-        self.x509 = result.x509
-        self.user_id_hash = result.user_id_hash
+        self._refresh_config()
         self.authenticated = True
         return result if not self._raw_mode else data
 
     async def logout(self) -> None:
-        # TODO: Закончить
-        body = schemas.LogoutRequest(
-            device_id=self.device_id,
-            token_sn=self.token_sn,
-        )
+        pass

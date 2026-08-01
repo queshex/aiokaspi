@@ -31,7 +31,7 @@ class Keys:
             )
         ).decode("utf-8")
 
-        return private_key, public_key
+        return public_key, private_key
 
     @staticmethod
     def get_pk(public_key: str) -> str:
