@@ -21,7 +21,6 @@ class AuthClient:
         transport: Transport | None = None,
         session: aiohttp.ClientSession | None = None,
         storage: storage.BaseStorage | None = None,
-        raw_mode: bool = False,
     ):
         if transport is None:
             if session is None:
@@ -31,7 +30,6 @@ class AuthClient:
             transport = Transport(session=session)
         self.transport = transport
         self.storage = storage or FileStorage()
-        self._raw_mode: bool = raw_mode
         self.step: schemas.Step = schemas.Step.FIRST
         self.process_id: str | None = None
         self.config_manager: ConfigManager = config.ConfigManager(
@@ -55,8 +53,7 @@ class AuthClient:
             f"pk_tag={mask(self.pk_tag)}, "
             f"device_id={mask(self.device_id)}, "
             f"install_id={mask(self.install_id)}, "
-            f"pin_hash={mask(self.pin_hash)}, "
-            f"raw_mode={self._raw_mode}, "
+            f"pin_hash={mask(self.pin_hash)}," 
             f"step={self.step}, "
             f"process_id={mask(self.process_id)}, "
             f"token_sn={mask(self.token_sn)}, "
@@ -129,7 +126,7 @@ class AuthClient:
         meta = validation.ResponseValidator.init(data)
         self.process_id = meta.p_id
         self.step = schemas.Step.SECOND
-        return meta if not self._raw_mode else data
+        return meta
 
     async def send_otp(self, phone_number: str) -> schemas.Meta:
         self._already_auth()
@@ -161,9 +158,7 @@ class AuthClient:
             headers=headers,
         )
         self.step = schemas.Step.THIRD
-        return (
-            validation.ResponseValidator.send_otp(data) if not self._raw_mode else data
-        )
+        return validation.ResponseValidator.send_otp(data)
 
     async def confirm_otp(self, otp: str) -> schemas.Meta:
         self._already_auth()
@@ -193,12 +188,8 @@ class AuthClient:
             headers=headers,
         )
         self.step = schemas.Step.FINISH
-        return (
-            validation.ResponseValidator.confirm_otp(data)
-            if not self._raw_mode
-            else data
-        )
-
+        return validation.ResponseValidator.confirm_otp(data)
+    
     async def finish(self) -> schemas.FinishResponse:
         self._already_auth()
         self._check_step(schemas.Step.FINISH)
@@ -252,9 +243,6 @@ class AuthClient:
                 user_id_hash=result.user_id_hash,
             ),
         )
-        self._refresh_config()
-        self.authenticated = True
-        return result if not self._raw_mode else data
 
     async def logout(self) -> None:
         pass

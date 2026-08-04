@@ -1,9 +1,16 @@
 import asyncio
+import logging
 
 import aiohttp
-
 from aiokaspi.auth.service import AuthClient
 from aiokaspi.core.storage.file import FileStorage
+
+# Настройка вывода логов в консоль для разработки/тестов
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logging.getLogger("aiokaspi").setLevel(logging.DEBUG)
 
 
 # Just for checking git
