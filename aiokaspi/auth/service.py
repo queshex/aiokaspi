@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-
-from aiokaspi.auth import exceptions, schemas, utils, validation
+from aiokaspi import exceptions as base_exceptions
+from aiokaspi.auth import schemas, utils, validation
 from aiokaspi.core import config, storage
 from aiokaspi.core.keys import Keys
 from aiokaspi.core.schemas import Entity, SessionSchema
@@ -53,7 +53,7 @@ class AuthClient:
             f"pk_tag={mask(self.pk_tag)}, "
             f"device_id={mask(self.device_id)}, "
             f"install_id={mask(self.install_id)}, "
-            f"pin_hash={mask(self.pin_hash)}," 
+            f"pin_hash={mask(self.pin_hash)},"
             f"step={self.step}, "
             f"process_id={mask(self.process_id)}, "
             f"token_sn={mask(self.token_sn)}, "
@@ -82,18 +82,52 @@ class AuthClient:
 
     def _check_step(self, step: schemas.Step) -> None:
         if self.step != step:
-            raise exceptions.KaspiPayError(
+            raise base_exceptions.KaspiPayError(
                 f"Incorrect step: {self.step}, expected {step}"
             )
 
     def _already_auth(self) -> None:
         if self.authenticated:
-            raise exceptions.KaspiPayError(
+            raise base_exceptions.KaspiPayError(
                 "You are already authenticated, but you call auth method"
             )
 
     async def me(self):
-        pass
+        url = "https://mtoken.kaspi.kz/v08/organizations/org-context-otp"
+        secret = Keys.complete_ecdh(self.config.x509, self.config.private_key)
+        sn_mac = Keys.token_sn_mac(self.config.token_sn, secret)
+        print(f"SNMAC: {sn_mac}")
+        pre_headers = schemas.PreContextHeaders(
+            x_time=utils.get_current_time(),
+            x_pktag=self.config.pk_tag,
+            x_su=Keys.compute_x_su(url),
+            x_kb_tokensn=self.config.token_sn,
+            x_kb_client_ip=utils.get_local_ip(),
+            x_install_id=self.config.install_id,
+            x_kb_tokensnmac=sn_mac,
+        )
+        body = schemas.ContextRequestData(
+            schemas.DeviceInformation(
+                device_id=self.config.device_id, install_id=self.config.install_id
+            )
+        )
+
+        x_sign = Keys.compute_x_sign(
+            url=url,
+            headers=pre_headers.asdict_with_aliases(),
+            x_sh=pre_headers.x_sh,
+            body=body,
+            private_key=self.config.private_key,
+        )
+        headers = schemas.ContextHeaders.from_pre(pre_headers, x_sign)
+
+        data: dict = await self.transport.post(
+            base_url="https://mtoken.kaspi.kz",
+            endpoint="/v08/organizations/org-context-otp",
+            payload=body,
+            headers=headers,
+        )
+        return data
 
     async def init(self) -> schemas.Meta:
         self._already_auth()
@@ -189,7 +223,7 @@ class AuthClient:
         )
         self.step = schemas.Step.FINISH
         return validation.ResponseValidator.confirm_otp(data)
-    
+
     async def finish(self) -> schemas.FinishResponse:
         self._already_auth()
         self._check_step(schemas.Step.FINISH)
@@ -243,6 +277,7 @@ class AuthClient:
                 user_id_hash=result.user_id_hash,
             ),
         )
+        self._refresh_config()
 
     async def logout(self) -> None:
         pass

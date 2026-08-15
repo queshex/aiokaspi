@@ -102,7 +102,7 @@ class FirstStepRequestData(BaseSchema):
     device_id: str = field(metadata=_alias("deviceId"))
     install_id: str = field(metadata=_alias("installId"))
 
-    app_build: str = field(default="1100", metadata=_alias("appBuild"))
+    app_build: str = field(default="1113", metadata=_alias("appBuild"))
     app_version: str = field(default="4.110.1", metadata=_alias("appVersion"))
     auth: str = field(default="2", metadata=_alias("auth"))
     device_brand: str = field(default="Apple", metadata=_alias("deviceBrand"))
@@ -410,7 +410,7 @@ class FinishHeaders(BaseSchema):
         default="gzip, deflate, br", metadata=_alias("accept-encoding")
     )
     x_sh: str = field(
-        default="url,X-Platform-Type,X-Time,X-Locale,X-Emulator,X-Call,X-Net-Type,X-SV,X-Time-Zone",
+        default="url,X-SV,X-Time-Zone,X-Emulator,X-Locale,X-Call,X-Time,X-Net-Type,X-Install-ID,X-Platform-Type",
         metadata=_alias("x-sh"),
     )
 
@@ -441,37 +441,152 @@ class FinishHeaders(BaseSchema):
 
 
 @dataclass(slots=True)
-class LogoutHeaders(BaseSchema):
-    # TODO: Перепроверить default поля
-
+class PreContextHeaders(BaseSchema):
+    x_time: str = field(metadata=_alias("X-Time"))
+    x_pktag: str = field(metadata=_alias("X-PkTag"))
+    x_su: str = field(metadata=_alias("X-SU"))
+    x_kb_tokensn: str = field(metadata=_alias("X-Kb-TokenSn"))
     x_kb_client_ip: str = field(metadata=_alias("X-Kb-Client-Ip"))
-    x_sign: str = field(metadata=_alias("X-Sign"))
-    x_kb_token_sn_mac: str = field(metadata=_alias("X-Kb-TokenSnMac"))
-    x_kb_token_sn: str = field(metadata=_alias("X-Kb-TokenSn"))
+    x_install_id: str = field(metadata=_alias("X-Install-ID"))
+    x_kb_tokensnmac: str = field(metadata=_alias("X-Kb-TokenSnMac"))
 
-    x_time: str = field(
-        default="2026-07-01T20:00:35.137+0500", metadata=_alias("X-Time")
-    )
-    x_pi: str = field(default="3777205", metadata=_alias("X-PI"))
     host: str = field(default="mtoken.kaspi.kz", metadata=_alias("Host"))
-    x_locale: str = field(default="ru-RU", metadata=_alias("X-Locale"))
-    accept: str = field(default="*/*", metadata=_alias("Accept"))
-    x_sv: str = field(default="2", metadata=_alias("X-SV"))
-    accept_language: str = field(default="ru", metadata=_alias("Accept-Language"))
     accept_encoding: str = field(
         default="gzip, deflate, br", metadata=_alias("Accept-Encoding")
-    )
-    content_type: str = field(
-        default="application/json", metadata=_alias("Content-Type")
     )
     x_call: str = field(default="notConnected", metadata=_alias("X-Call"))
     user_agent: str = field(
         default="Kaspi%20Pay/1104 CFNetwork/3860.600.12 Darwin/25.5.0",
         metadata=_alias("User-Agent"),
     )
-    connection: str = field(default="keep-alive", metadata=_alias("Connection"))
-    x_s: str = field(default="R:0|E:0|RH:0|N:0|GS:0", metadata=_alias("X-S"))
+    x_app_bld: str = field(default="1113", metadata=_alias("X-App-Bld"))
     x_sh: str = field(
-        default="url,X-SV,X-Kb-Client-Ip,X-Time,X-Call,X-Locale,X-Kb-TokenSnMac,X-Kb-TokenSn,X-S,X-PI",
+        default="url,X-Call,X-Kb-Client-Ip,X-Locale,X-Install-ID,X-Time,X-App-Ver,X-App-Bld,X-Kb-TokenSn,X-S,X-SV,X-Kb-TokenSnMac",
         metadata=_alias("X-SH"),
     )
+    x_app_ver: str = field(default="4.114", metadata=_alias("X-App-Ver"))
+    x_locale: str = field(default="ru-RU", metadata=_alias("X-Locale"))
+    accept_language: str = field(default="ru", metadata=_alias("Accept-Language"))
+    x_s: str = field(default="R:0|E:0|RH:0|N:0|GS:0", metadata=_alias("X-S"))
+    x_sv: str = field(default="2", metadata=_alias("X-SV"))
+    accept: str = field(default="*/*", metadata=_alias("accept"))
+
+
+@dataclass(slots=True, kw_only=True)
+class ContextHeaders(PreContextHeaders):
+    x_sign: str = field(metadata=_alias("X-Sign"))
+
+    @classmethod
+    def from_pre(cls, pre: PreContextHeaders, x_sign: str) -> ContextHeaders:
+        return cls(
+            x_time=pre.x_time,
+            x_pktag=pre.x_pktag,
+            x_su=pre.x_su,
+            x_kb_tokensn=pre.x_kb_tokensn,
+            x_kb_client_ip=pre.x_kb_client_ip,
+            x_install_id=pre.x_install_id,
+            x_kb_tokensnmac=pre.x_kb_tokensnmac,
+            host=pre.host,
+            accept_encoding=pre.accept_encoding,
+            x_call=pre.x_call,
+            user_agent=pre.user_agent,
+            x_app_bld=pre.x_app_bld,
+            x_sh=pre.x_sh,
+            x_app_ver=pre.x_app_ver,
+            x_locale=pre.x_locale,
+            accept_language=pre.accept_language,
+            x_s=pre.x_s,
+            x_sv=pre.x_sv,
+            accept=pre.accept,
+            x_sign=x_sign,
+        )
+
+
+@dataclass(slots=True)
+class DeviceInformation(BaseSchema):
+    device_id: str = field(metadata=_alias("DeviceId"))  # config sensetive
+    install_id: str = field(metadata=_alias("InstallId"))  # config sensetive
+
+    device_name: str = field(default="iPhone", metadata=_alias("DeviceName"))
+    platform: str = field(default="iOS", metadata=_alias("Platform"))
+    front_camera_available: bool = field(
+        default=True, metadata=_alias("frontCameraAvailable")
+    )
+    product: str = field(default="Kaspi Pay", metadata=_alias("Product"))
+    sdk_version: str = field(default="AOTP service", metadata=_alias("SdkVersion"))
+    board: str = field(default="26.5.2", metadata=_alias("Board"))
+    screen_width: str = field(default="320.0", metadata=_alias("ScreenWidth"))
+    version_code: str = field(default="1113", metadata=_alias("VersionCode"))
+    buildRelease: str = field(default="iOS 26.5.2", metadata=_alias("BuildRelease"))
+    application_id: str = field(
+        default="kz.kaspi.business", metadata=_alias("ApplicationId")
+    )
+    brand: str = field(default="Apple", metadata=_alias("Brand"))
+    version_name: str = field(default="4.114", metadata=_alias("VersionName"))
+    screeen_height: str = field(default="693.0", metadata=_alias("ScreenHeight"))
+    model: str = field(default="iPhone15,4", metadata=_alias("Model"))
+
+
+@dataclass(slots=True)
+class ContextRequestData(BaseSchema):
+    device_information: DeviceInformation = field(
+        metadata=_alias("DeviceInformation")
+    )  # TODO:
+    organization_id: int = field(default=0, metadata=_alias("OrganizationId"))
+
+
+#
+# чевых проблемы в me() (org-context-otp):
+#   ──────
+#   ### 1. X-Kb-TokenSnMac — неправильный алгоритм
+#
+#   Твой код (keys.py:85-87):
+#
+#     def token_sn_mac(token_sn: str) -> str:
+#         return str(zlib.crc32(token_sn.encode()) % 1000000)  # CRC32 — неправильно!
+#
+#   Рабочий референс (crypto.js:105-137 https://github.com/tapter-dev/kaspi-pos-automation/blob/main/src/crypto.js):
+#
+# �    // OCRA-1:HOTP-SHA256-6:QH64-T1M — HMAC-SHA256 с shared secret от ECDH
+#     const computeTokenSnMac = (tokenSN, secret) => { ... }
+#
+#   Токен X-Kb-TokenSnMac вычисляется через OCRA-1 (HMAC-SHA256) на основе ECDH shared secret, а не CRC32. У тебя вообще нет ECDH key agreement.
+#
+#   ### 2. Нет ECDH key exchange
+#
+# �  В рефе на finish шаге:
+#
+#   1. Генерируется новая ECDH пара (generateECDH())
+#   2. Её public key отправляется в guard.x509
+#   3. Сервер возвращает свой public key в data.x509
+#   4. Вызывается completeECDH(serverX509) — ECDH Diffie-Hellman → получается shared secret
+#   5. Этот secret используется для computeTokenSnMac
+#
+#   У тебя в finish() — guard.x509 = твой статический public key (тот же что используется для подписей). Нужна отдельная ECDH пара для key exchange.
+#
+#   ### 3. X-Sign — body не включается в подпись
+#
+# �  Рабочий референс:
+#
+#     orgHeaders['X-Sign'] = computeXSign(orgUrl, orgHeaders, orgHeaders['X-SH'], orgPayload);
+#     // ↑ body (4-й аргумент) хешируется вместе с заголовками
+#
+#     computeXSign = (url, headers, xshList, body) => {
+#         // ...собрать строку из headers...
+#         if (body) signText += '\n' + body;
+#         const hash = sha256(signText);
+#         return ecSign(hash);
+#     };
+#
+#   Твой keys.py:67-81 — не принимает body вообще и не включает body в строку подписи. Для org-context-otp body нужен в подписи.
+#
+#   Плюс, у тебя compute_x_sign склеивает parts через "".join(parts), а в рефе используется "\n" разделитель (lines.join('\n')). И для url ты делаешь какую-то условную логику с
+#   urlparse, а в рефе просто 'url:' + url.toLowerCase().
+#   ──────
+#   Итого, чтобы org-context-otp заработал, нужно:
+#
+#   1. Добавить ECDH key exchange в finish() — генерировать отдельную ECDH пару, отправлять её public key, а после ответа делать diffieHellman с серверным ключом → сохранять shared
+#   secret
+#   2. Переписать token_sn_mac() на OCRA-1 HMAC-SHA256 с этим shared secret
+#   3. Исправить compute_x_sign() — добавить body в подпись, использовать \n разделитель и формат key:value
+#

@@ -16,7 +16,7 @@ class Transport:
     async def get(
         self,
         endpoint: str,
-        headers,  # TODO: It should receive raw dict no dataclasses!!
+        headers,
         params=None,
     ) -> dict:
         async with self.session.get(
@@ -30,12 +30,13 @@ class Transport:
             )
             return await response.json()
 
-    async def post(self, endpoint: str, headers, payload) -> dict:
+    async def post(self, endpoint: str, headers, payload, base_url=None) -> dict:
         async with self.session.post(
-            f"{self.base_url}/{endpoint}",
+            f"{base_url if base_url else self.base_url}{endpoint}",
             headers=headers.asdict_with_aliases(),
             json=payload.asdict_with_aliases(),
         ) as response:
+            logger.debug("SENDING: headers=%s body=%s", headers, payload)
             raw_text = await response.text()
             logger.debug(
                 "POST %s status=%s raw_body=%s", endpoint, response.status, raw_text

@@ -6,3 +6,7 @@ def get_current_time() -> str:
     dt = datetime.now(tz)
     formatted_dt = dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + dt.strftime("%z")
     return formatted_dt
+
+
+def get_local_ip() -> str:
+    return "192.168.10.15"
