@@ -116,3 +116,9 @@ class ResponseValidator:
         raise basic_exceptions.KaspiPayError(
             f"Unexpected response from Kaspi, please open issue in Github! Raw: {data}"
         )
+
+    @staticmethod
+    def expired_session(data: dict) -> None:
+        is_error_code: bool | None = data.get("IsErrorCode")
+        if is_error_code is not None and is_error_code:
+            raise basic_exceptions.KaspiPayError(f"Session is not valid. Raw {data}")

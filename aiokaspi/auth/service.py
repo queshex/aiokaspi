@@ -96,7 +96,6 @@ class AuthClient:
         url = "https://mtoken.kaspi.kz/v08/organizations/org-context-otp"
         secret = Keys.complete_ecdh(self.config.x509, self.config.private_key)
         sn_mac = Keys.token_sn_mac(self.config.token_sn, secret)
-        print(f"SNMAC: {sn_mac}")
         pre_headers = schemas.PreContextHeaders(
             x_time=utils.get_current_time(),
             x_pktag=self.config.pk_tag,
@@ -127,6 +126,7 @@ class AuthClient:
             payload=body,
             headers=headers,
         )
+        validation.ResponseValidator.expired_session(data)
         return data
 
     async def init(self) -> schemas.Meta:
