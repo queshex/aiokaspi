@@ -1,9 +1,11 @@
 *.json
+config.toml
 .env
 .venv/*
 # Игнорировать все папки __pycache__
 __pycache__/
-
+.ruff_cache/
+aiokaspi.egg-info/
 # Игнорировать отдельный скомпилированный Python-код
 *.py[cod]
 *$py.class

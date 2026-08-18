@@ -1,12 +1,23 @@
 import asyncio
-import aiohttp
+import logging
 
+import aiohttp
 from aiokaspi.auth.service import AuthClient
-#Just for checking git
+from aiokaspi.core.storage.file import FileStorage
+
+# Настройка вывода логов в консоль для разработки/тестов
+logging.basicConfig(
+    level=logging.WARNING,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logging.getLogger("aiokaspi").setLevel(logging.DEBUG)
+
+
+# Just for checking git
 async def main():
     async with aiohttp.ClientSession() as session:
-        auth_client = await AuthClient.from_files(session=session, with_session=False)
-        
+        auth_client = AuthClient(session=session, storage=FileStorage())
+
         # Шаг 1: Инициализация
         data = await auth_client.init()
         print("Step 1 (init) OK:", data)

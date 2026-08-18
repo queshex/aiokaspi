@@ -1,4 +1,6 @@
-import json, os
+import json
+import os
+
 
 class Storage:
     @staticmethod
@@ -16,14 +18,24 @@ class Storage:
             return False
         with open(path, "r") as f:
             data = json.load(f)
-            if "x509" not in data or "token_sn" not in data or "user_id_hash" not in data:
+            if (
+                "x509" not in data
+                or "token_sn" not in data
+                or "user_id_hash" not in data
+            ):
                 return False
         return True
 
     @staticmethod
-    def save_session(x509: str, token_sn: str, user_id_hash: str, path: str = "session.json") -> None:
+    def save_session(
+        x509: str, token_sn: str, user_id_hash: str, path: str = "session.json"
+    ) -> None:
         with open(path, "w") as f:
-            json.dump({"x509": x509, "token_sn": token_sn, "user_id_hash": user_id_hash}, f, indent=4)
+            json.dump(
+                {"x509": x509, "token_sn": token_sn, "user_id_hash": user_id_hash},
+                f,
+                indent=4,
+            )
 
     @staticmethod
     def get_keys(path: str = "keys.json") -> tuple[str, str]:
@@ -44,7 +56,9 @@ class Storage:
     @staticmethod
     def save_keys(private_key: str, public_key: str, path: str = "keys.json") -> None:
         with open(path, "w") as f:
-            json.dump({"private_key": private_key, "public_key": public_key}, f, indent=4)
+            json.dump(
+                {"private_key": private_key, "public_key": public_key}, f, indent=4
+            )
 
     @staticmethod
     def get_device(path: str = "device.json") -> tuple[str, str, str]:
@@ -61,11 +75,25 @@ class Storage:
             return False
         with open(path, "r") as f:
             data = json.load(f)
-            if "device_id" not in data or "install_id" not in data or "pin_hash" not in data:
+            if (
+                "device_id" not in data
+                or "install_id" not in data
+                or "pin_hash" not in data
+            ):
                 return False
         return True
 
     @staticmethod
-    def save_device(device_id: str, install_id: str, pin_hash: str, path: str = "device.json") -> None:
+    def save_device(
+        device_id: str, install_id: str, pin_hash: str, path: str = "device.json"
+    ) -> None:
         with open(path, "w") as f:
-            json.dump({"device_id": device_id, "install_id": install_id, "pin_hash": pin_hash}, f, indent=4)
+            json.dump(
+                {
+                    "device_id": device_id,
+                    "install_id": install_id,
+                    "pin_hash": pin_hash,
+                },
+                f,
+                indent=4,
+            )
