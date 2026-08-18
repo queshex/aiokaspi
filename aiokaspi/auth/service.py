@@ -153,7 +153,7 @@ class AuthClient:
         )
 
         data: dict = await self.transport.post(
-            "api/v1/entrance/step",
+            "/api/v1/entrance/step",
             payload=body,
             headers=headers,
         )
@@ -187,7 +187,7 @@ class AuthClient:
         )
 
         data: dict = await self.transport.post(
-            "api/v1/entrance/step",
+            "/api/v1/entrance/step",
             payload=body,
             headers=headers,
         )
@@ -217,7 +217,7 @@ class AuthClient:
         )
 
         data: dict = await self.transport.post(
-            "api/v1/entrance/step",
+            "/api/v1/entrance/step",
             payload=body,
             headers=headers,
         )
@@ -264,7 +264,7 @@ class AuthClient:
         headers = schemas.FinishHeaders.from_pre(pre_headers, x_sign=x_sign)
 
         data: dict = await self.transport.post(
-            "api/v1/kpentrance/finish",
+            "/api/v1/kpentrance/finish",
             payload=body,
             headers=headers,
         )
