@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -16,24 +16,28 @@ class Config:
     x509: str | None = None
     token_sn: str | None = None
     user_id_hash: str | None = None
+    extras: dict = field(default_factory=dict)
 
     @classmethod
     def from_sources(
         cls,
         pk: str,
         pk_tag: str,
-        device: DeviceSchema,
-        keys: KeysSchema,
-        session: SessionSchema | None = None,
+        device: dict,
+        keys: dict,
+        session: dict | None = None,
+        extra: dict | None = None,
     ) -> Config:
         data = {
             "pk": pk,
             "pk_tag": pk_tag,
-            **asdict(device),
-            **asdict(keys),
+            **device,
+            **keys,
         }
-        if session is not None:
-            data |= asdict(session)
+        if session:
+            data |= session
+        if extra:
+            data["extras"] = extra
         return cls(**data)
 
 
@@ -41,6 +45,7 @@ class Entity(str, Enum):
     device = "device"
     keys = "keys"
     session = "session"
+    extra = "extra"
 
 
 @dataclass
@@ -61,10 +66,3 @@ class DeviceSchema:
 class KeysSchema:
     public_key: str
     private_key: str
-
-
-ENTITY_MAP = {
-    Entity.device: DeviceSchema,
-    Entity.keys: KeysSchema,
-    Entity.session: SessionSchema,
-}

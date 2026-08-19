@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from dataclasses import asdict
 from typing import TYPE_CHECKING
 from aiokaspi import exceptions as base_exceptions
 from aiokaspi.auth import schemas, utils, validation
@@ -93,6 +93,7 @@ class AuthClient:
             )
 
     async def me(self):
+        print(self.config.extras)
         url = "https://mtoken.kaspi.kz/v08/organizations/org-context-otp"
         secret = Keys.complete_ecdh(self.config.x509, self.config.private_key)
         sn_mac = Keys.token_sn_mac(self.config.token_sn, secret)
@@ -271,12 +272,15 @@ class AuthClient:
         result: schemas.FinishResponse = validation.ResponseValidator.finish(data)
         self.storage.save(
             entity=Entity.session,
-            data=SessionSchema(
-                x509=result.x509,
-                token_sn=result.token_sn,
-                user_id_hash=result.user_id_hash,
+            data=asdict(
+                SessionSchema(
+                    x509=result.x509,
+                    token_sn=result.token_sn,
+                    user_id_hash=result.user_id_hash,
+                ),
             ),
         )
+
         self._refresh_config()
 
     async def logout(self) -> None:
